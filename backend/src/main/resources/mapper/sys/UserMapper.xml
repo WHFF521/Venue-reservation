@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygstar.backend.sys.mapper.UserMapper">
+    <select id="login" resultType="com.ygstar.backend.sys.entity.User" parameterType="com.ygstar.backend.sys.entity.User">
+        select * from t_user where user_mail = #{userMail} and password = #{password}
+    </select>
+
+    <update id="updateProfilePicture">
+        update t_user set profile_picture = #{newPicture} where user_mail = #{userMail}
+    </update>
+
+    <insert id="insertUser" parameterType="com.ygstar.backend.sys.entity.User">
+            INSERT INTO t_user (user_mail, phone_number, nick_name, password, profile_picture, status)
+            VALUES (#{userMail}, #{phoneNumber}, #{nickName}, #{password}, #{profilePicture}, #{status})
+    </insert>
+    <update id="updateUserName">
+        update t_user set nick_name = #{newUserName} where user_mail = #{userMail}
+    </update>
+
+    <select id="getUserInfo" resultType="com.ygstar.backend.sys.entity.User">
+        select nick_name,profile_picture,phone_number from t_user where user_mail = #{userMail}
+    </select>
+
+    <update id="updateUserPhoneNumber">
+        update t_user set phone_number = #{newPhoneNumber} where user_mail = #{userMail}
+    </update>
+    <select id="selectByUserMail" resultType="com.ygstar.backend.sys.entity.User">
+        select * from t_user where user_mail = #{userMail}
+    </select>
+
+    <update id="updateBanDays">
+        update t_user
+        set status = 0, ban_days = 30, cancellation = 0
+        where user_mail = #{userMail}
+    </update>
+
+    <update id="addCancellation">
+        update t_user
+        set cancellation = #{newCancellation}
+        where user_mail = #{userMail}
+    </update>
+
+    <select id="getBanedUser" resultType="com.ygstar.backend.sys.entity.User">
+        SELECT * FROM t_user WHERE status = 0
+            limit #{startIndex}, #{pageSize}
+    </select>
+
+    <select id="countGetBanedUser" resultType="Long">
+        SELECT COUNT(*) FROM t_user WHERE status = 0
+    </select>
+
+    <update id="updateUserStatus">
+        UPDATE t_user SET status = 1 ,ban_days = 0
+        WHERE user_mail = #{userMail}
+    </update>
+</mapper>

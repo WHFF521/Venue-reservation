@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygstar.backend.sys.mapper.ActivityMapper">
+
+    <select id="countOngoingActivities" resultType="Long">
+        SELECT count(*) FROM t_activity WHERE venue_id =#{venueId} AND act_date >= CURDATE() AND delete_flag = 0
+    </select>
+
+    <select id="countExpiredActivities" resultType="Long">
+        SELECT count(*) FROM t_activity WHERE venue_id =#{venueId} AND CURDATE() > act_date AND delete_flag = 0
+    </select>
+
+    <select id="countOngoingActivitiesByActivityName" resultType="Long">
+        SELECT count(*) FROM t_activity WHERE act_name LIKE CONCAT('%', #{actName}, '%') AND venue_id =#{venueId} AND act_date >= CURDATE() AND delete_flag = 0;
+    </select>
+
+    <select id="countExpiredActivitiesByActivityName" resultType="Long">
+        SELECT count(*) FROM t_activity WHERE act_name LIKE CONCAT('%', #{actName}, '%') AND venue_id =#{venueId} AND CURDATE() > act_date AND delete_flag = 0;
+    </select>
+
+    <select id="getOngoingActivities" resultType="com.ygstar.backend.sys.entity.Activity">
+        SELECT * FROM t_activity
+        WHERE act_date >= CURDATE() AND delete_flag = 0 AND venue_id =#{venueId} limit #{start},#{pageSize};
+    </select>
+
+    <select id="getExpiredActivities" resultType="com.ygstar.backend.sys.entity.Activity">
+        SELECT * FROM t_activity
+        WHERE  CURDATE() > act_date AND delete_flag = 0 AND venue_id =#{venueId} limit #{start}, #{pageSize};
+    </select>
+
+    <!-- 根据活动名称模糊查询 -->
+    <select id="selectOngoingActivitiesByActName" resultType="com.ygstar.backend.sys.entity.Activity">
+        SELECT *
+        FROM t_activity
+        WHERE act_name LIKE CONCAT('%', #{actName}, '%') AND venue_id =#{venueId} AND act_date >= CURDATE() AND delete_flag = 0 limit #{start},#{pageSize};
+    </select>
+
+    <select id="selectExpiredActivitiesByActName" resultType="com.ygstar.backend.sys.entity.Activity">
+        SELECT *
+        FROM t_activity
+        WHERE act_name LIKE CONCAT('%', #{actName}, '%') AND venue_id =#{venueId} AND CURDATE() > act_date AND delete_flag = 0 limit #{start},#{pageSize};
+    </select>
+
+    <update id="updateById" parameterType="com.ygstar.backend.sys.entity.Activity">
+        UPDATE t_activity
+        SET act_address=#{actAddress},act_name=#{actName}, act_participant_num=#{actParticipantNum},
+            act_introduction=#{actIntroduction}, act_guideline=#{actGuideline},
+            act_cancel_time=#{actCancelTime}, act_date=#{actDate}, act_time=#{actTime},
+            act_earliest_booking_time=#{actEarliestBookingTime},act_latest_bookingtime=#{actLatestBookingtime},
+            venue_visit_schedule_id=#{venueVisitScheduleId},act_picture=#{actPicture}
+        WHERE act_id=#{actId}
+    </update>
+
+    <update id="deleteAct" >
+        UPDATE  t_activity
+        SET delete_flag =1
+        WHERE act_id=#{actId}
+    </update>
+
+    <insert id="insertActivity" parameterType="com.ygstar.backend.sys.entity.Activity">
+        INSERT INTO t_activity(act_name,act_address,act_participant_num,act_introduction,act_guideline,venue_id,act_cancel_time,
+                               act_date,act_time,act_earliest_booking_time,act_latest_bookingtime,venue_visit_schedule_id,
+                               act_picture)
+        VALUES (#{insertActivity.actName},#{insertActivity.actAddress},#{insertActivity.actParticipantNum},#{insertActivity.actIntroduction},
+        #{insertActivity.actGuideline},#{insertActivity.venueId},#{insertActivity.actCancelTime},#{insertActivity.actDate},#{insertActivity.actTime},
+                #{insertActivity.actEarliestBookingTime},#{insertActivity.actLatestBookingtime},#{insertActivity.venueVisitScheduleId},#{insertActivity.actPicture})
+    </insert>
+
+    <select id="getActByActId" resultType="com.ygstar.backend.sys.entity.Activity">
+        SELECT * FROM t_activity WHERE act_id =#{actId}
+    </select>
+
+
+    <select id="ActivityList" resultType="com.ygstar.backend.sys.entity.Activity">
+        select act_id,act_name,act_rating,act_time,act_picture from t_activity
+    </select>
+    <select id="ActivityInfo" resultType="com.ygstar.backend.sys.entity.Activity">
+        select * from t_activity where act_id = #{actId}
+    </select>
+
+    <select id="getMaximumCapacity" resultType="int">
+        select act_participant_num from t_activity where act_id = #{actId}
+    </select>
+    <select id="getTopEightActivity" resultType="com.ygstar.backend.sys.entity.Activity">
+        select act_id,act_name,act_rating,act_picture from t_activity order by act_rating desc limit 8
+    </select>
+    <select id="searchActivityByName" resultType="com.ygstar.backend.sys.entity.Activity">
+        select act_id,act_name,act_rating,act_picture,act_time from t_activity where act_name like #{actName}
+    </select>
+
+    <select id="getActivityByVenueId" resultType="com.ygstar.backend.sys.entity.Activity">
+        select * from t_activity where venue_id = #{venueId}
+    </select>
+
+    <update id="updateActRating">
+        UPDATE t_activity
+        SET act_rating = #{newRating}
+        WHERE act_id = #{activityId}
+    </update>
+
+    <resultMap id="activityCancelTimeMap" type="com.ygstar.backend.sys.dao.ActivityCancelTime">
+        <result column="act_date" property="actDate" jdbcType="DATE"/>
+        <result column="act_cancel_time" property="actCancelTime" jdbcType="INTEGER"/>
+        <result column="start_time" property="startTime" jdbcType="TIME"/>
+        <result column="end_time" property="endTime" jdbcType="TIME"/>
+    </resultMap>
+
+    <select id="getCancelSection" parameterType="int" resultMap="activityCancelTimeMap">
+        SELECT
+            act_date,
+            act_cancel_time,
+            t_venue_visit_schedule.start_time,
+            t_venue_visit_schedule.end_time
+        FROM
+            t_activity
+        LEFT JOIN
+            t_venue_visit_schedule ON t_activity.venue_visit_schedule_id = t_venue_visit_schedule.venue_visit_schedule_id
+        WHERE
+            act_id = #{activityId}
+    </select>
+
+</mapper>

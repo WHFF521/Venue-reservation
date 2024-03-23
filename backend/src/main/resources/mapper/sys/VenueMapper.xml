@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ygstar.backend.sys.mapper.VenueMapper">
+    <insert id="insertVenue" parameterType="com.ygstar.backend.sys.entity.Venue" useGeneratedKeys="true" keyProperty="venueId">
+        INSERT INTO t_venue (venue_name, venue_address, phone_number, venue_introduction, guide_line, rating, cancel_time,  open_time, open_days, advance_bookday, picture)
+        VALUES (#{venueName}, #{venueAddress}, #{phoneNumber}, #{venueIntroduction}, #{guideLine}, #{rating}, #{cancelTime},  #{openTime}, #{openDays}, #{advanceBookday}, #{picture})
+    </insert>
+
+    <resultMap id="BaseResultMap" type="com.ygstar.backend.sys.entity.Venue">
+        <id column="venue_id" property="venueId" jdbcType="INTEGER"/>
+        <result column="venue_name" property="venueName" jdbcType="VARCHAR"/>
+        <result column="venue_address" property="venueAddress" jdbcType="VARCHAR"/>
+        <result column="phone_number" property="phoneNumber" jdbcType="CHAR"/>
+        <result column="venue_introduction" property="venueIntroduction" jdbcType="VARCHAR"/>
+        <result column="guide_line" property="guideLine" jdbcType="VARCHAR"/>
+        <result column="rating" property="rating" jdbcType="DECIMAL"/>
+        <result column="cancel_time" property="cancelTime" jdbcType="INTEGER"/>
+        <result column="delete_flag" property="deleteFlag" jdbcType="BIT"/>
+        <result column="open_time" property="openTime" jdbcType="VARCHAR"/>
+        <result column="open_days" property="openDays" jdbcType="CHAR"/>
+        <result column="advance_bookday" property="advanceBookday" jdbcType="TINYINT"/>
+        <result column="picture" property="picture" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="selectByVenueId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT * FROM t_venue WHERE venue_id = #{venueId}
+    </select>
+
+    <update id="updateById" parameterType="com.ygstar.backend.sys.entity.Venue">
+        UPDATE t_venue
+        SET venue_name = #{venue.venueName}, venue_address = #{venue.venueAddress}, phone_number = #{venue.phoneNumber},
+            venue_introduction = #{venue.venueIntroduction}, guide_line = #{venue.guideLine}, rating = #{venue.rating},
+            cancel_time = #{venue.cancelTime}, open_time = #{venue.openTime},
+            open_days = #{venue.openDays}, advance_bookday = #{venue.advanceBookday}, picture = #{venue.picture}
+        WHERE venue_id = #{venue.venueId}
+    </update>
+<!--场馆管理表格-->
+    <resultMap id="venueAdminResultMap" type="com.ygstar.backend.sys.dao.VenueAdminDAO">
+        <result column="venue_id" property="venueId"/>
+        <result column="venue_name" property="venueName"/>
+        <result column="venue_address" property="venueAddress"/>
+        <result column="open_time" property="openTime"/>
+        <result column="adminUsernames" property="adminUsernames"/>
+    </resultMap>
+    <select id="getBasicVenues" resultMap="venueAdminResultMap">
+        SELECT t_venue.venue_id, t_venue.venue_name, t_venue.venue_address, t_venue.open_time,t_venue.delete_flag
+        FROM t_venue
+            limit #{startIndex}, #{pageSize}
+    </select>
+
+    <update id="newVenue" parameterType="com.ygstar.backend.sys.entity.Venue">
+        INSERT INTO t_venue(venue_name,venue_address,phone_number,
+                            venue_introduction, guide_line, rating,
+                            cancel_time, open_time,open_days, advance_bookday, picture)
+        VALUES (#{venue.venueName},#{venue.venueAddress},#{venue.phoneNumber},
+                #{venue.venueIntroduction},#{venue.guideLine}, #{venue.rating},
+                #{venue.cancelTime}, #{venue.openTime},#{venue.openDays},#{venue.advanceBookday},#{venue.picture})
+    </update>
+
+    <select id="countGetBasicVenues" resultType="Long">
+        SELECT COUNT(*) FROM t_venue
+    </select>
+
+    <select id="VenueList" resultType="com.ygstar.backend.sys.entity.Venue">
+        select venue_id,venue_name,rating,open_time,picture from t_venue
+    </select>
+    <select id="VenueInfo" resultType="com.ygstar.backend.sys.entity.Venue">
+        select * from t_venue where venue_id = #{venueId}
+    </select>
+
+    <update id="updateVenuePicture">
+        UPDATE t_venue
+        SET picture = #{picture}
+        WHERE venue_id = #{venueId}
+    </update>
+
+
+    <update id="updateVenueRating">
+        UPDATE t_venue
+        SET rating = #{newRating}
+        WHERE venueId = #{venueId}
+    </update>
+
+
+    <select id="getTopEightVenue" resultType="com.ygstar.backend.sys.entity.Venue">
+        select venue_id,venue_name,rating,picture from t_venue order by rating desc limit 8
+    </select>
+
+    <select id="searchVenueByName" resultType="com.ygstar.backend.sys.entity.Venue">
+        select venue_id,venue_name,rating,picture,open_time from t_venue where venue_name like #{venueName}
+    </select>
+
+    <update id="updateDeleteFlag">
+        UPDATE t_venue
+        SET delete_flag = #{deleteFlag}
+        WHERE venue_id = #{venueId}
+    </update>
+
+    <select id="getOpenDays" resultType="String">
+        select open_days from t_venue where venue_id = #{venueId}
+    </select>
+</mapper>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygstar.backend.sys.mapper.AdminMapper">
+
+    <select id="login" resultType="com.ygstar.backend.sys.entity.Admin" parameterType="com.ygstar.backend.sys.entity.Admin">
+        select * from t_admin where username = #{admin.username} and user_password = #{admin.userPassword}
+    </select>
+
+    <select id="countGetAllAdmin" resultType="Long">
+        SELECT COUNT(*)from t_admin JOIN t_venue ON t_admin.venue_id = t_venue.venue_id
+    </select>
+
+    <select id="getAllAdmin" resultType="com.ygstar.backend.sys.dao.AdminVenueDAO" parameterType="map">
+        select username,user_password,venue_name,permission
+        from t_admin
+                 join t_venue on t_admin.venue_id = t_venue.venue_id
+            limit #{startIndex}, #{pageSize}
+    </select>
+
+    <select id="insertAdmin" resultType="com.ygstar.backend.sys.entity.Admin" parameterType="com.ygstar.backend.sys.entity.Admin">
+        INSERT INTO t_admin (username, user_password, venue_id, permission)
+        VALUES (#{username}, #{userPassword}, #{venueId}, #{permission})
+    </select>
+
+    <update id="updatePermission">
+        UPDATE t_admin
+        SET permission = #{frozenPermission}
+        WHERE username = #{username}
+    </update>
+
+
+</mapper>

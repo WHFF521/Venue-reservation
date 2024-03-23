@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygstar.backend.sys.mapper.VenueVisitScheduleMapper">
+
+    <select id="countByDateWeek" resultType="Long">
+        SELECT count(*) FROM t_venue_visit_schedule WHERE venue_id =#{venueId} AND date_week =#{dateWeek}
+    </select>
+
+    <select id="page" resultType="com.ygstar.backend.sys.entity.VenueVisitSchedule">
+        SELECT * FROM t_venue_visit_schedule  WHERE venue_id = #{venueId} limit #{start},#{pageSize}
+    </select>
+
+    <!-- 根据dateWeek查询日程的SQL -->
+    <select id="selectSchedulesByDateWeek" resultType="com.ygstar.backend.sys.entity.VenueVisitSchedule">
+        SELECT * FROM t_venue_visit_schedule WHERE venue_id = #{venueId} AND date_week = #{dateWeek} limit #{start} ,#{pageSize}
+    </select>
+
+    <select id="selectAllSchedulesByDateWeek" resultType="com.ygstar.backend.sys.entity.VenueVisitSchedule">
+        SELECT * FROM t_venue_visit_schedule WHERE venue_id = #{venueId} AND date_week = #{dateWeek}
+    </select>
+
+    <insert id="insertVenueVisitSchedule" parameterType="com.ygstar.backend.sys.entity.VenueVisitSchedule">
+        INSERT INTO t_venue_visit_schedule(venue_id,start_time,end_time,maximum_capacity,date_week)
+        VALUES (#{venueVisitSchedule.venueId},#{venueVisitSchedule.startTime},#{venueVisitSchedule.endTime},#{venueVisitSchedule.maximumCapacity},#{venueVisitSchedule.dateWeek})
+    </insert>
+
+    <delete id="deleteVenueVisitSchedule">
+        DELETE FROM t_venue_visit_schedule WHERE venue_visit_schedule_id =#{venueVisitScheduleId} AND venue_id =#{venueId}
+    </delete>
+
+    <select id="getVenueVisitScheduleByVenueId" resultType="com.ygstar.backend.sys.entity.VenueVisitSchedule">
+        SELECT * FROM t_venue_visit_schedule WHERE venue_id = #{venueId} AND date_week = #{week} ORDER BY start_time ASC
+    </select>
+<!--    根据venueVisitScheduleId查询maximumCapacity-->
+    <select id="getMCByVVSId" resultType="int">
+        SELECT maximum_capacity FROM t_venue_visit_schedule WHERE venue_visit_schedule_id = #{venueVisitScheduleId}
+    </select>
+</mapper>

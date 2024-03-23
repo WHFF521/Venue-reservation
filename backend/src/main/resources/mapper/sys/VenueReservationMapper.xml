@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygstar.backend.sys.mapper.VenueReservationMapper">
+<!--    查询venueId，bookTime，venueVisitScheduleId相同的数据个数-->
+    <select id="getVRCByVeIdABTAVeVSI" resultType="int">
+        SELECT COUNT(*)
+        FROM t_venue_reservation WHERE
+        venue_id = #{venueId} AND book_time = #{bookTime} AND venue_visit_schedule_id = #{venueVisitScheduleId} AND status = 0
+    </select>
+
+    <resultMap id="VenueReservationResultMap" type="com.ygstar.backend.sys.dao.VenueReservationDAO">
+        <id property="orderNumber" column="order_number"/>
+        <result property="venueId" column="venue_id"/>
+        <result property="idCardNumber" column="id_card_num"/>
+        <result property="visitorName" column="visitor_name"/>
+        <result property="venueName" column="venue_name"/>
+        <result property="bookTime" column="book_time"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+    </resultMap>
+
+
+    <select id="getVenueReservations" resultMap="VenueReservationResultMap" parameterType="map">
+        SELECT
+        vr.order_number,
+        vr.venue_id,
+        vr.id_card_num,
+        v.visitor_name,
+        ve.venue_name,
+        vr.book_time,
+        vvs.start_time,
+        vvs.end_time
+        FROM t_venue_reservation vr
+        JOIN t_visitor v ON vr.id_card_num	= v.idcard_number
+        JOIN t_venue ve ON vr.venue_id = ve.venue_id
+        JOIN t_venue_visit_schedule vvs ON vr.venue_visit_schedule_id = vvs.venue_visit_schedule_id
+        WHERE vr.status = #{status}
+        AND vr.user_mail = #{userMail}
+    </select>
+
+<!--    插入新数据-->
+    <insert id="insertVenueReservation">
+        INSERT INTO t_venue_reservation (venue_id, book_time, user_mail, id_card_num, status, venue_visit_schedule_id)
+        VALUES (#{ac.venueId}, #{ac.bookTime}, #{ac.userMail}, #{ac.idCardNum}, #{ac.status}, #{ac.venueVisitScheduleId})
+    </insert>
+
+    <select id="hasSameRecord" resultType="int">
+        SELECT COUNT(*)
+        FROM t_venue_reservation
+        WHERE venue_id = #{rd.venueId}
+          AND book_time =  #{rd.bookTime}
+          AND user_mail =  #{rd.userMail}
+          AND id_card_num = #{rd.idCardNum}
+          AND status = #{rd.status}
+          AND venue_visit_schedule_id =  #{rd.venueVisitScheduleId}
+    </select>
+
+    <select id="countByWeek" resultType="java.lang.Integer">
+        SELECT IFNULL(COUNT(*),0) as totalVisitors
+        FROM t_venue_reservation
+            JOIN t_venue_visit_schedule ON t_venue_reservation.venue_visit_schedule_id = t_venue_visit_schedule.venue_visit_schedule_id
+        WHERE t_venue_reservation.venue_id=#{venueId} and t_venue_visit_schedule.date_week = #{weekDay}
+    </select>
+
+    <resultMap id="venueVisitDatailResultMap" type="com.ygstar.backend.sys.dao.VenueVisitDetailDAO">
+        <result column="order_number" property="orderNumber"/>
+        <result column="book_time" property="bookTime"/>
+        <result column="maskedUserMail" property="userMail"/>
+        <result column="maskedIdCardNumber" property="idCardNum"/>
+    </resultMap>
+
+    <select id="getVenueVisitDetails" resultMap="venueVisitDatailResultMap">
+        SELECT order_number, book_time,
+               CONCAT(SUBSTRING(user_mail, 1, 3), '****', SUBSTRING(user_mail, -6)) as maskedUserMail,
+               CONCAT(SUBSTRING(id_card_num, 1, 4), '**********', SUBSTRING(id_card_num, -4)) as maskedIdCardNumber
+        FROM t_venue_reservation
+        WHERE venue_id = #{venueId}
+            limit #{startIndex}, #{pageSize}
+    </select>
+
+    <select id="countGetVenueVisitDetails" resultType="Long">
+        SELECT COUNT(*) FROM t_venue_reservation WHERE venue_id = #{venueId}
+    </select>
+
+    <resultMap id="venueProfileResultMap" type="com.ygstar.backend.sys.dao.VenueProfileDAO">
+        <result column="book_time" property="bookTime"/>
+        <result column="maskedUserMail" property="userMail"/>
+        <result column="maskedIdCardNumber" property="idCardNumber"/>
+    </resultMap>
+
+    <select id="getVenueProfile" resultMap="venueProfileResultMap">
+        SELECT book_time,
+               CONCAT(SUBSTRING(user_mail, 1, 3), '****', SUBSTRING(user_mail, -6)) as maskedUserMail,
+               CONCAT(SUBSTRING(id_card_num, 1, 4), '**********', SUBSTRING(id_card_num, -4)) as maskedIdCardNumber
+        FROM t_venue_reservation
+        WHERE venue_id = #{venueId}
+        ORDER BY book_time ASC
+            LIMIT 15
+    </select>
+
+    <update id="updateVenueScore">
+        UPDATE t_venue_reservation
+        SET status = 4,
+            score = #{score}
+        WHERE order_number = #{orderNumber} AND status = 1
+    </update>
+
+    <resultMap id="venSumAndCountMap" type="com.ygstar.backend.sys.dao.SumAndCount">
+        <result column="scoreSum" property="sum" jdbcType="DOUBLE"/>
+        <result column="reservationCount" property="count" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="getVenScoreSumAndCount" parameterType="int" resultMap="venSumAndCountMap">
+        SELECT
+            SUM(score) AS scoreSum,
+            COUNT(*) AS reservationCount
+        FROM
+            t_venue_reservation
+        WHERE
+            activity_id = #{activityId}
+          AND status = 4
+    </select>
+
+    <resultMap id="venueStatusAndScoreMap" type="com.ygstar.backend.sys.dto.StatusAndScore">
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="score" property="score" jdbcType="DOUBLE"/>
+    </resultMap>
+    <select id="getStatusAndScore" parameterType="int" resultMap="venueStatusAndScoreMap">
+        SELECT status,score FROM t_venue_reservation WHERE order_number = #{orderNumber}
+    </select>
+
+    <resultMap id="venueCancelTimeMap" type="com.ygstar.backend.sys.dao.VenueCancelTime">
+        <result column="book_time" property="venueDate" jdbcType="TIMESTAMP"/>
+        <result column="cancel_time" property="venCancelTime" jdbcType="INTEGER"/>
+        <result column="start_time" property="startTime" jdbcType="TIME"/>
+        <result column="end_time" property="endTime" jdbcType="TIME"/>
+    </resultMap>
+
+    <select id="getCancelSection" parameterType="int" resultMap="venueCancelTimeMap">
+        SELECT
+            t_venue_reservation.book_time,
+            t_venue.cancel_time,
+            t_venue_visit_schedule.start_time,
+            t_venue_visit_schedule.end_time
+        FROM
+            t_venue_reservation
+                LEFT JOIN
+            t_venue ON t_venue_reservation.venue_id = t_venue.venue_id
+                LEFT JOIN
+            t_venue_visit_schedule ON t_venue_reservation.venue_visit_schedule_id = t_venue_visit_schedule.venue_visit_schedule_id
+        WHERE
+            t_venue_reservation.order_number = #{orderNumber}
+    </select>
+
+    <update id="updateToCancel">
+        UPDATE t_venue_reservation
+        SET status=2
+        WHERE order_number=#{orderNumber} AND status=0
+    </update>
+
+    <update id="updateToVisit">
+        UPDATE t_venue_reservation
+        SET status=1
+        WHERE order_number=#{orderNumber} AND status=0
+    </update>
+
+    <select id="venueRemind" resultType="java.lang.String" parameterType="map">
+        SELECT DISTINCT user_mail
+        FROM t_venue_reservation
+        WHERE NOW() > DATE_SUB(book_time, INTERVAL 1 DAY)
+        AND status = 0
+    </select>
+</mapper>

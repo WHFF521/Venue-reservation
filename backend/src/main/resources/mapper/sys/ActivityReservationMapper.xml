@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygstar.backend.sys.mapper.ActivityReservationMapper">
+    <resultMap id="venueReservationResultMap" type="com.ygstar.backend.sys.dao.ActivityReservationDAO">
+        <result property="orderNumber" column="order_number"/>
+        <result property="activityId" column="activity_id"/>
+        <result property="idCardNumber" column="id_card_number"/>
+        <result property="activityName" column="act_name"/>
+        <result property="visitorName" column="visitor_name"/>
+        <result property="activityTime" column="act_time"/>
+    </resultMap>
+
+    <select id="getVenueReservations" resultMap="venueReservationResultMap">
+        SELECT ar.order_number,ar.activity_id ,ar.id_card_number, a.act_name, v.visitor_name, a.act_time
+        FROM t_activity_reservation ar
+                 LEFT JOIN t_activity a ON ar.activity_id = a.act_id
+                 LEFT JOIN t_visitor v ON ar.id_card_number = v.idcard_number
+        WHERE ar.status = #{status} AND ar.user_mail = #{userMail}
+        ORDER BY ar.order_number DESC
+    </select>
+
+    <select id="getReservationCount" resultType="int">
+        SELECT COUNT(*) FROM t_activity_reservation WHERE status = 0 AND activity_id = #{activityId}
+    </select>
+    <insert id="insertReservation">
+        insert into t_activity_reservation (activity_id, user_mail, id_card_number, status,booking_time)
+        values (#{activityId}, #{userMail}, #{idCardNumber}, 0,(SELECT act_date
+                FROM t_activity
+                WHERE act_id = #{activityId}))
+    </insert>
+    <select id="hasSameRecord" resultType="int">
+        SELECT COUNT(*)
+        FROM t_activity_reservation
+        WHERE id_card_number = #{idCardNumber}
+          AND status = 0
+    </select>
+<!--首页活动表单数据获取-->
+    <!--类型声明-->
+    <resultMap id="activityInfoResultMap" type="com.ygstar.backend.sys.dto.VenueActivityDTO">
+        <result column="activityName" property="activityName"/>
+        <result column="totalParticipants" property="totalParticipants"/>
+    </resultMap>
+    <!--数据获取-->
+    <select id="getActivityInfoByVenueId" resultMap="activityInfoResultMap">
+        SELECT a.act_name as activityName, IFNULL(COUNT(r.order_number), 0) as totalParticipants
+        FROM t_activity a
+                 LEFT JOIN t_activity_reservation r ON a.act_id = r.activity_id
+        WHERE a.venue_id = #{venueId}
+        GROUP BY a.act_id
+    </select>
+
+<!--详情页信息获取-->
+    <resultMap id="activityDetailResultMap" type="com.ygstar.backend.sys.dao.ActivityDetailDAO">
+        <result column="order_number" property="orderNumber"/>
+        <result column="booking_time" property="bookingTime"/>
+        <result column="act_name" property="actName"/>
+        <result column="maskeduserMail" property="userMail"/>
+        <result column="maskedidCardNumber" property="idCardNumber"/>
+
+    </resultMap>
+
+    <select id="getActivityDetails" resultMap="activityDetailResultMap">
+        SELECT r.order_number , r.booking_time, a.act_name,
+               CONCAT(SUBSTRING(r.user_mail, 1, 3), '****', SUBSTRING(r.user_mail, -6)) as maskedUserMail,
+               CONCAT(SUBSTRING(r.id_card_number, 1, 4), '**********', SUBSTRING(r.id_card_number, -4)) as maskedIdCardNumber
+        FROM t_activity_reservation r
+                 JOIN t_activity a ON r.activity_id = a.act_id
+                 WHERE a.venue_id = #{venueId} AND a.act_date >= CURDATE() AND a.dele_flag=0
+                    limit #{startIndex}, #{pageSize}
+    </select>
+
+    <select id="countGetActivityDetails" resultType="Long">
+        SELECT COUNT(*) FROM t_activity_reservation r
+                                 JOIN t_activity a ON r.activity_id = a.act_id
+        WHERE a.venue_id = #{venueId}
+    </select>
+
+    <update id="updateActScore">
+        UPDATE t_activity_reservation
+        SET status = 4,
+            score = #{score}
+        WHERE order_number = #{orderNumber} And status = 1
+    </update>
+
+    <resultMap id="scoreSumAndCountMap" type="com.ygstar.backend.sys.dao.SumAndCount">
+        <result column="scoreSum" property="sum" jdbcType="DOUBLE"/>
+        <result column="reservationCount" property="count" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="getActScoreSumAndCount" parameterType="int" resultMap="scoreSumAndCountMap">
+        SELECT
+            SUM(score) AS scoreSum,
+            COUNT(*) AS reservationCount
+        FROM
+            t_activity_reservation
+        WHERE
+            activity_id = #{activityId}
+          AND status = 4
+    </select>
+
+    <resultMap id="statusAndScoreMap" type="com.ygstar.backend.sys.dto.StatusAndScore">
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="score" property="score" jdbcType="DOUBLE"/>
+    </resultMap>
+    <select id="getStatusAndScore" parameterType="int" resultMap="statusAndScoreMap">
+        SELECT status,score FROM t_activity_reservation WHERE order_number = #{orderNumber}
+    </select>
+
+    <update id="updateToCancel">
+        UPDATE t_activity_reservation
+        SET status = 2
+        WHERE order_number = #{orderNumber} AND status = 0
+    </update>
+
+    <update id="updateToVisit">
+        UPDATE t_activity_reservation
+        SET status = 1
+        WHERE order_number = #{orderNumber} AND status = 0
+    </update>
+    
+    <select id="activityRemind" resultType="java.lang.String" parameterType="map">
+        SELECT DISTINCT user_mail
+        FROM t_activity_reservation
+        WHERE NOW() > DATE_SUB(booking_time, INTERVAL 1 DAY)
+        AND status = 0;
+    </select>
+</mapper>
